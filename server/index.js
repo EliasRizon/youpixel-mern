@@ -10,6 +10,7 @@ import commentRoutes from './routes/commentRoutes.js'
 import SearchRoutes from './routes/SearchRoutes.js'
 import subscribeRoutes from './routes/subscribeRoutes.js'
 import likeRoutes from './routes/likeRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
 
 const app = express()
 dotenv.config()
@@ -25,6 +26,7 @@ app.use('/comment', commentRoutes)
 app.use('/search', SearchRoutes)
 app.use('/subscribe', subscribeRoutes)
 app.use('/like', likeRoutes)
+app.use('/admin', adminRoutes)
 
 const CONNECTION_URL =
   'mongodb+srv://ngothuan2422001:Ngovanthuan2001@youpixels.hpkrfpg.mongodb.net/you-pixels?retryWrites=true&w=majority'
