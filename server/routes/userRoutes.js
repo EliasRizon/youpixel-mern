@@ -2,6 +2,7 @@ import express from 'express'
 const router = express.Router()
 
 import {
+  getAllUsers,
   getUser,
   googleAuth,
   sub,
@@ -15,5 +16,6 @@ router.patch('/sub/:channelId', auth, sub)
 router.patch('/unsub/:channelId', auth, unsub)
 
 router.get('/:userId', getUser)
+router.get('/', auth, getAllUsers)
 
 export default router

@@ -11,7 +11,10 @@ export const adminLogin = async (req, res, next) => {
     if (admin) {
       bcrypt.compare(password, admin.password, function (err, result) {
         if (result) {
-          const token = jwt.sign({ username, role: 'admin' }, process.env.JWT)
+          const token = jwt.sign(
+            { id: admin._id, role: 'admin' },
+            process.env.JWT,
+          )
           res.status(200).json({
             message: 'Login successfully',
             data: {

@@ -25,6 +25,52 @@ export const googleAuth = async (req, res, next) => {
   }
 }
 
+export const getAllUsers = async (req, res) => {
+  const role = req.role
+  const { page } = req.query
+
+  try {
+    if (role != 'admin') {
+      res.status(401).json({ message: 'You is not an admin!' })
+    }
+
+    const users = await User.aggregate([
+      {
+        $lookup: {
+          from: 'subscribes',
+          localField: '_id',
+          foreignField: 'channelId',
+          as: 'subscriber',
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          email: 1,
+          picture: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          numOfSubscriber: {
+            $cond: {
+              if: {
+                $isArray: '$subscriber',
+              },
+              then: {
+                $size: '$subscriber',
+              },
+              else: 0,
+            },
+          },
+        },
+      },
+    ])
+
+    res.status(200).json({ data: users })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
 export const getUser = async (req, res) => {
   const userId = mongoose.Types.ObjectId(req.params.userId)
   try {
