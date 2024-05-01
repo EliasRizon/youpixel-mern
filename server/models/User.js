@@ -14,6 +14,10 @@ const UserSchema = new mongoose.Schema(
     picture: {
       type: String,
     },
+    active: {
+      type: Boolean,
+      default: true,
+    },
     watchedVideos: {
       type: [
         {
