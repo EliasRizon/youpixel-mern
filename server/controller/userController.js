@@ -27,7 +27,7 @@ export const googleAuth = async (req, res, next) => {
 
 export const getAllUsers = async (req, res) => {
   const role = req.role
-  const { page } = req.query
+  const { search_query, page } = req.query
 
   try {
     if (role != 'admin') {
@@ -35,10 +35,16 @@ export const getAllUsers = async (req, res) => {
     } else {
       const startIndex = (Number(page) - 1) * 20
       const total = await User.find({
+        email: { $regex: search_query, $options: 'i' },
         active: true,
       }).countDocuments({})
 
       const users = await User.aggregate([
+        {
+          $match: {
+            email: { $regex: search_query, $options: 'i' },
+          },
+        },
         {
           $lookup: {
             from: 'subscribes',

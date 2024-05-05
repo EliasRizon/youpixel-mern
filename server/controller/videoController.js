@@ -39,10 +39,11 @@ export const editVideo = async (req, res, next) => {
 export const deleteVideo = async (req, res, next) => {
   const { videoId } = req.params
   const userObjectId = mongoose.Types.ObjectId(req.userId)
+  const requestRole = req?.role
 
   try {
     const video = await Video.findById(videoId)
-    if (userObjectId.equals(video.userId)) {
+    if (userObjectId.equals(video.userId) || requestRole === 'admin') {
       await Video.findByIdAndDelete(videoId)
       await Comment.deleteMany({
         videoId: videoId,
