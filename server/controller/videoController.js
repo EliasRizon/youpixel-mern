@@ -107,12 +107,34 @@ export const fetchVideos = async (req, res) => {
 }
 
 export const getVideo = async (req, res) => {
-  const { id } = req.params
+  const id = mongoose.Types.ObjectId(req.params.id)
 
   try {
-    const video = await Video.findById(id)
+    const video = await Video.aggregate([
+      {
+        $match: {
+          _id: id,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userInfo',
+        },
+      },
+      {
+        $unwind: '$userInfo',
+      },
+      {
+        $project: {
+          'userInfo.watchedVideos': 0,
+        },
+      },
+    ])
 
-    res.status(200).json({ data: video })
+    res.status(200).json({ data: video[0] })
   } catch (error) {
     res.status(500).json({ message: error })
   }
