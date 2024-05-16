@@ -6,6 +6,7 @@ import {
   deleteVideo,
   editVideo,
   fetchVideos,
+  getPendingVideosBySearch,
   getTopView,
   getUserVideos,
   getUserVideosPending,
@@ -25,6 +26,7 @@ router.patch('/:videoId', auth, editVideo)
 router.patch('/addview/:id', addView)
 
 router.get('/author/pending', getUserVideosPending)
+router.get('/search/pending', getPendingVideosBySearch)
 router.get('/search', getVideosBySearch)
 router.get('/author', getUserVideos)
 router.get('/topview', getTopView)

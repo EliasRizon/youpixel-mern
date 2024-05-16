@@ -462,3 +462,59 @@ export const getVideosBySearch = async (req, res, next) => {
     res.status(500).send({ message: error })
   }
 }
+
+export const getPendingVideosBySearch = async (req, res, next) => {
+  const { search_query, page } = req.query
+
+  try {
+    const startIndex = (Number(page) - 1) * 20
+    const total = await Video.find({
+      title: { $regex: search_query, $options: 'i' },
+      status: ['pending', 'denied'],
+    }).countDocuments({})
+
+    const result = await Video.aggregate([
+      {
+        $match: {
+          title: { $regex: search_query, $options: 'i' },
+          status: ['pending', 'denied'],
+        },
+      },
+      {
+        $project: {
+          status: 0,
+          videoPath: 0,
+          videoUrl: 0,
+          likes: 0,
+          __v: 0,
+          dislikes: 0,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userInfo',
+        },
+      },
+      {
+        $unwind: '$userInfo',
+      },
+      {
+        $project: {
+          'userInfo.watchedVideos': 0,
+        },
+      },
+      { $sort: { views: -1 } },
+      { $skip: startIndex },
+      { $limit: 20 },
+    ])
+
+    res
+      .status(200)
+      .json({ data: result, numberOfPages: Math.ceil(total / 20), total })
+  } catch (error) {
+    res.status(500).send({ message: error })
+  }
+}
