@@ -36,6 +36,42 @@ export const editVideo = async (req, res, next) => {
   }
 }
 
+export const ApproveVideo = async (req, res, next) => {
+  const videoObjectId = mongoose.Types.ObjectId(req.params.videoId)
+  const requestRole = req.role
+  try {
+    if (requestRole != 'admin') {
+      res.status(401).json({ message: 'Unauthorized' })
+    } else {
+      await Video.findByIdAndUpdate(videoObjectId, {
+        status: 'approved',
+      })
+
+      res.status(200).json({ message: 'Edit successfully' })
+    }
+  } catch (error) {
+    res.status(500).send({ message: error })
+  }
+}
+
+export const DenyVideo = async (req, res, next) => {
+  const videoObjectId = mongoose.Types.ObjectId(req.params.videoId)
+  const requestRole = req.role
+  try {
+    if (requestRole != 'admin') {
+      res.status(401).json({ message: 'Unauthorized' })
+    } else {
+      await Video.findByIdAndUpdate(videoObjectId, {
+        status: 'denided',
+      })
+
+      res.status(200).json({ message: 'Edit successfully' })
+    }
+  } catch (error) {
+    res.status(500).send({ message: error })
+  }
+}
+
 export const deleteVideo = async (req, res, next) => {
   const { videoId } = req.params
   const userObjectId = mongoose.Types.ObjectId(req.userId)
@@ -450,7 +486,6 @@ export const getVideosBySearch = async (req, res, next) => {
           'userInfo.watchedVideos': 0,
         },
       },
-      { $sort: { views: -1 } },
       { $skip: startIndex },
       { $limit: 20 },
     ])
@@ -470,14 +505,14 @@ export const getPendingVideosBySearch = async (req, res, next) => {
     const startIndex = (Number(page) - 1) * 20
     const total = await Video.find({
       title: { $regex: search_query, $options: 'i' },
-      status: ['pending', 'denied'],
+      status: 'pending',
     }).countDocuments({})
 
     const result = await Video.aggregate([
       {
         $match: {
           title: { $regex: search_query, $options: 'i' },
-          status: ['pending', 'denied'],
+          status: 'pending',
         },
       },
       {
@@ -506,7 +541,61 @@ export const getPendingVideosBySearch = async (req, res, next) => {
           'userInfo.watchedVideos': 0,
         },
       },
-      { $sort: { views: -1 } },
+      { $skip: startIndex },
+      { $limit: 20 },
+    ])
+
+    res
+      .status(200)
+      .json({ data: result, numberOfPages: Math.ceil(total / 20), total })
+  } catch (error) {
+    res.status(500).send({ message: error })
+  }
+}
+
+export const getDenidedVideosBySearch = async (req, res, next) => {
+  const { search_query, page } = req.query
+
+  try {
+    const startIndex = (Number(page) - 1) * 20
+    const total = await Video.find({
+      title: { $regex: search_query, $options: 'i' },
+      status: 'denided',
+    }).countDocuments({})
+
+    const result = await Video.aggregate([
+      {
+        $match: {
+          title: { $regex: search_query, $options: 'i' },
+          status: 'denided',
+        },
+      },
+      {
+        $project: {
+          status: 0,
+          videoPath: 0,
+          videoUrl: 0,
+          likes: 0,
+          __v: 0,
+          dislikes: 0,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userInfo',
+        },
+      },
+      {
+        $unwind: '$userInfo',
+      },
+      {
+        $project: {
+          'userInfo.watchedVideos': 0,
+        },
+      },
       { $skip: startIndex },
       { $limit: 20 },
     ])
