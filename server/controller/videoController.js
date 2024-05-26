@@ -448,15 +448,68 @@ export const getVideosBySearch = async (req, res, next) => {
 
   try {
     const startIndex = (Number(page) - 1) * 20
-    const total = await Video.find({
-      title: { $regex: search_query, $options: 'i' },
-      status: 'approved',
-    }).countDocuments({})
+    const total = await Video.aggregate([
+      {
+        $search: {
+          index: 'videos-full-text-search',
+          text: {
+            query: `${search_query}`,
+            path: {
+              wildcard: '*',
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          status: 'approved',
+        },
+      },
+      {
+        $project: {
+          status: 0,
+          videoPath: 0,
+          videoUrl: 0,
+          likes: 0,
+          __v: 0,
+          dislikes: 0,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userInfo',
+        },
+      },
+      {
+        $unwind: '$userInfo',
+      },
+      {
+        $project: {
+          'userInfo.watchedVideos': 0,
+        },
+      },
+      {
+        $count: 'count',
+      },
+    ])
 
     const result = await Video.aggregate([
       {
+        $search: {
+          index: 'videos-full-text-search',
+          text: {
+            query: `${search_query}`,
+            path: {
+              wildcard: '*',
+            },
+          },
+        },
+      },
+      {
         $match: {
-          title: { $regex: search_query, $options: 'i' },
           status: 'approved',
         },
       },
@@ -490,9 +543,11 @@ export const getVideosBySearch = async (req, res, next) => {
       { $limit: 20 },
     ])
 
-    res
-      .status(200)
-      .json({ data: result, numberOfPages: Math.ceil(total / 20), total })
+    res.status(200).json({
+      data: result,
+      numberOfPages: Math.ceil(total[0]?.count / 20),
+      total: total[0]?.count ? total[0].count : 0,
+    })
   } catch (error) {
     res.status(500).send({ message: error })
   }
