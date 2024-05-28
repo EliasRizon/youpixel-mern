@@ -449,17 +449,21 @@ export const getVideosBySearch = async (req, res, next) => {
   try {
     const startIndex = (Number(page) - 1) * 20
     const total = await Video.aggregate([
-      {
-        $search: {
-          index: 'videos-full-text-search',
-          text: {
-            query: `${search_query}`,
-            path: {
-              wildcard: '*',
+      ...(search_query
+        ? [
+            {
+              $search: {
+                index: 'videos-full-text-search',
+                text: {
+                  query: `${search_query}`,
+                  path: {
+                    wildcard: '*',
+                  },
+                },
+              },
             },
-          },
-        },
-      },
+          ]
+        : []),
       {
         $match: {
           status: 'approved',
