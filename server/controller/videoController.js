@@ -550,17 +550,21 @@ export const getVideosBySearch = async (req, res, next) => {
     ])
 
     const result = await Video.aggregate([
-      {
-        $search: {
-          index: 'videos-full-text-search',
-          text: {
-            query: `${search_query}`,
-            path: {
-              wildcard: '*',
+      ...(search_query
+        ? [
+            {
+              $search: {
+                index: 'videos-full-text-search',
+                text: {
+                  query: `${search_query}`,
+                  path: {
+                    wildcard: '*',
+                  },
+                },
+              },
             },
-          },
-        },
-      },
+          ]
+        : []),
       {
         $match: {
           status: 'approved',
