@@ -3,7 +3,6 @@ import {
   ApproveVideo,
   DenyVideo,
   addVideo,
-  addVideoTest,
   addView,
   addWatchedVideo,
   deleteVideo,
@@ -22,7 +21,6 @@ import auth from '../middleware/auth.js'
 const router = express.Router()
 
 router.post('/watched/:videoId', auth, addWatchedVideo)
-router.post('/test', addVideoTest)
 router.post('/', auth, addVideo)
 
 router.delete('/:videoId', auth, deleteVideo)

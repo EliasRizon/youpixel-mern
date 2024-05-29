@@ -15,6 +15,10 @@ const VideoSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    transcript: {
+      type: String,
+      default: '',
+    },
     duration: {
       type: Number,
       default: 0,

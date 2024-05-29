@@ -5,7 +5,11 @@ import mongoose from 'mongoose'
 import * as fs from 'fs'
 import axios from 'axios'
 import Ffmpeg from 'fluent-ffmpeg'
-import FormData from 'form-data'
+import { Leopard } from '@picovoice/leopard-node'
+
+const handle = new Leopard(
+  'WXrEzPKQGPlGxdOVEsm1wmGWlYgufFRTRZqkBj64Y+RVem+OVfsbuQ==',
+)
 
 async function downloadVideo(url, outputPath) {
   const writer = fs.createWriteStream(outputPath)
@@ -34,61 +38,26 @@ async function extractAudio(videoPath, audioPath) {
   })
 }
 
-const transcribeAudio = async (audioFilePath) => {
-  try {
-    const formData = new FormData()
-    formData.append('file', fs.createReadStream(audioFilePath))
-    formData.append('model', 'whisper-1') // Specify the Whisper model you want to use
-
-    const response = await axios.post(
-      'https://api.openai.com/v1/audio/transcriptions',
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          ...formData.getHeaders(),
-        },
-      },
-    )
-
-    console.log('Transcription:', response.data)
-  } catch (error) {
-    console.error(
-      'Error transcribing audio:',
-      error.response ? error.response.data : error.message,
-    )
-  }
-}
-
-export const addVideoTest = async (req, res, next) => {
-  const videoUrl =
-    'https://firebasestorage.googleapis.com/v0/b/youpixels.appspot.com/o/videos%2F1669360994600%C4%90%E1%BA%BE%20V%C6%AF%C6%A0NG%20-%20%C4%90%C3%8CNH%20D%C5%A8NG%20-%20OFFICIAL%20MUSIC%20VIDEO.mp4?alt=media&token=aaf0e730-9644-4ac1-8042-436594451da9'
-
-  const currentDate = new Date()
-  const fileName = currentDate.getTime()
-  const videoPath = `videos/test.mp4`
-  const audioPath = `audios/test.wav`
-
-  try {
-    // console.log('Downloading video...')
-    // await downloadVideo(videoUrl, videoPath)
-    // console.log('Extracting audio...')
-    // await extractAudio(videoPath, audioPath)
-    await transcribeAudio(audioPath)
-
-    res.status(200).json({})
-  } catch (error) {
-    console.log('error', error)
-    res.status(500).send({ message: error })
-  }
-}
-
 export const addVideo = async (req, res, next) => {
   const userObjectId = mongoose.Types.ObjectId(req.userId)
 
-  const video = new Video({ userId: userObjectId, ...req.body })
-
   try {
+    const videoUrl = req.body.videoUrl
+
+    const currentDate = new Date()
+    const fileName = currentDate.getTime()
+    const videoPath = `videos/${fileName}.mp4`
+    const audioPath = `audios/${fileName}.wav`
+
+    await downloadVideo(videoUrl, videoPath)
+    await extractAudio(videoPath, audioPath)
+    const result = handle.processFile(audioPath)
+
+    const video = new Video({
+      userId: userObjectId,
+      ...req.body,
+      transcript: result.transcript,
+    })
     video.save()
     res.status(200).json({ data: video })
   } catch (error) {
