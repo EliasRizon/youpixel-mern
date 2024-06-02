@@ -49,19 +49,24 @@ export const addVideo = async (req, res, next) => {
     const videoPath = `videos/${fileName}.mp4`
     const audioPath = `audios/${fileName}.wav`
 
-    await downloadVideo(videoUrl, videoPath)
-    await extractAudio(videoPath, audioPath)
-    const result = handle.processFile(audioPath)
-
     const video = new Video({
       userId: userObjectId,
       ...req.body,
-      transcript: result.transcript,
     })
-    video.save()
+
+    const savedVideo = await video.save()
     res.status(200).json({ data: video })
+
+    await downloadVideo(videoUrl, videoPath)
+    await extractAudio(videoPath, audioPath)
+    const result = handle.processFile(audioPath)
+    const transcript = result.transcript
+    console.log('result.transcript', transcript)
+    await Video.findByIdAndUpdate(savedVideo._id, {
+      transcript: `${transcript}`,
+    })
   } catch (error) {
-    res.status(500).send({ message: error })
+    console.log('error', error)
   }
 }
 
